@@ -11,10 +11,14 @@ class FeedbackService:
         self,
         session: AsyncSession,
         incident_id: uuid.UUID,
+        organization_id: uuid.UUID,
         user_id: uuid.UUID,
         data: RCAFeedbackCreate,
         rca_report_id: Optional[uuid.UUID] = None
     ) -> RCAFeedback:
+        from backend.api.dependencies import verify_incident_ownership
+        await verify_incident_ownership(session, incident_id, organization_id)
+
         repo = FeedbackRepository(session)
         feedback = RCAFeedback(
             incident_id=incident_id,
@@ -29,8 +33,12 @@ class FeedbackService:
     async def get_incident_feedback(
         self,
         session: AsyncSession,
-        incident_id: uuid.UUID
+        incident_id: uuid.UUID,
+        organization_id: uuid.UUID
     ) -> Sequence[RCAFeedback]:
+        from backend.api.dependencies import verify_incident_ownership
+        await verify_incident_ownership(session, incident_id, organization_id)
+
         repo = FeedbackRepository(session)
         return await repo.get_by_incident(incident_id)
 

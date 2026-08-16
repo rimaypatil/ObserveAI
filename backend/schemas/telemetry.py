@@ -53,7 +53,7 @@ class DeploymentItemSchema(BaseModel):
 
 
 class IngestPayloadSchema(BaseModel):
-    api_key: str = Field(..., description="Project SDK API Key")
+    api_key: Optional[str] = Field(default=None, description="Project SDK API Key")
     service_name: str = Field(..., description="Target microservice name")
     environment: str = Field(default="production")
     logs: List[LogItemSchema] = Field(default_factory=list)

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Server Settings
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8080
     WORKERS_COUNT: int = 4
 
     # CORS Settings

@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.api.dependencies import get_current_user
+from backend.api.dependencies import get_current_user, require_owner
 from backend.database.session import get_async_session
 from backend.models.users import User
 from backend.schemas.auth import ApiKeyCreate, ApiKeyResponse
@@ -16,11 +16,11 @@ router = APIRouter(prefix="/projects", tags=["Projects & Services"])
 @router.post("", response_model=APIResponse[ProjectResponse], status_code=status.HTTP_201_CREATED)
 async def create_project(
     data: ProjectCreate,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Creates a new project within the user's organization."""
-    project = await project_service.create_project(session, current_user.organization_id, data)
+    """Creates a new project within the user's organization (Owner only)."""
+    project = await project_service.create_project(session, current_owner.organization_id, data)
     return APIResponse(
         message="Project created successfully.",
         data=ProjectResponse.model_validate(project)
@@ -32,8 +32,13 @@ async def list_projects(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Lists all projects owned by the user's organization."""
-    projects = await project_service.list_projects(session, current_user.organization_id)
+    """Lists projects available to the user (All projects for Owner, assigned projects for Member)."""
+    projects = await project_service.list_projects(
+        session,
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        role=current_user.role
+    )
     return APIResponse(
         message="Projects list retrieved.",
         data=[ProjectResponse.model_validate(p) for p in projects]
@@ -44,11 +49,11 @@ async def list_projects(
 async def create_api_key(
     project_id: uuid.UUID,
     data: ApiKeyCreate,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Generates a new SDK API key for high-throughput ingestion."""
-    api_key, raw_key = await project_service.create_api_key(session, project_id, data)
+    """Generates a new SDK API key for high-throughput ingestion (Owner only)."""
+    api_key, raw_key = await project_service.create_api_key(session, project_id, current_owner.organization_id, data)
     response_data = ApiKeyResponse.model_validate(api_key)
     response_data.raw_key = raw_key
     return APIResponse(
@@ -64,7 +69,7 @@ async def list_services(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Lists all microservices auto-discovered under a project."""
-    services = await project_service.list_services(session, project_id)
+    services = await project_service.list_services(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Services list retrieved.",
         data=[ServiceResponse.model_validate(s) for s in services]
@@ -75,11 +80,11 @@ async def list_services(
 async def update_project(
     project_id: uuid.UUID,
     data: UpdateProjectRequest,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Updates project details, logo, and settings."""
-    project = await project_service.update_project(session, project_id, data)
+    """Updates project details, logo, and settings (Owner only)."""
+    project = await project_service.update_project(session, project_id, current_owner.organization_id, data)
     return APIResponse(
         message="Project updated successfully.",
         data=ProjectResponse.model_validate(project)
@@ -89,11 +94,11 @@ async def update_project(
 @router.delete("/{project_id}", response_model=APIResponse[dict])
 async def delete_project(
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Soft deletes a project."""
-    await project_service.delete_project(session, project_id)
+    """Soft deletes a project (Owner only)."""
+    await project_service.delete_project(session, project_id, current_owner.organization_id)
     return APIResponse(
         message="Project deleted successfully.",
         data={"deleted": True}
@@ -103,11 +108,11 @@ async def delete_project(
 @router.post("/{project_id}/archive", response_model=APIResponse[ProjectResponse])
 async def archive_project(
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Archives a project."""
-    project = await project_service.archive_project(session, project_id)
+    """Archives a project (Owner only)."""
+    project = await project_service.archive_project(session, project_id, current_owner.organization_id)
     return APIResponse(
         message="Project archived successfully.",
         data=ProjectResponse.model_validate(project)
@@ -117,11 +122,11 @@ async def archive_project(
 @router.post("/{project_id}/restore", response_model=APIResponse[ProjectResponse])
 async def restore_project(
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Restores an archived project."""
-    project = await project_service.restore_project(session, project_id)
+    """Restores an archived project (Owner only)."""
+    project = await project_service.restore_project(session, project_id, current_owner.organization_id)
     return APIResponse(
         message="Project restored successfully.",
         data=ProjectResponse.model_validate(project)
@@ -132,12 +137,12 @@ async def restore_project(
 async def rotate_api_key(
     project_id: uuid.UUID,
     key_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Rotates an API key and returns a new raw key."""
+    """Rotates an API key and returns a new raw key (Owner only)."""
     from datetime import datetime, timezone
-    key, raw_key = await project_service.rotate_api_key(session, key_id)
+    key, raw_key = await project_service.rotate_api_key(session, key_id, current_owner.organization_id)
     return APIResponse(
         message="API key rotated successfully. Store the new key safely.",
         data=RotateApiKeyResponse(
@@ -155,11 +160,11 @@ async def rotate_api_key(
 async def disable_api_key(
     project_id: uuid.UUID,
     key_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Disables an active API key."""
-    await project_service.disable_api_key(session, key_id)
+    """Disables an active API key (Owner only)."""
+    await project_service.disable_api_key(session, key_id, current_owner.organization_id)
     return APIResponse(
         message="API key disabled successfully.",
         data={"disabled": True}
@@ -170,11 +175,11 @@ async def disable_api_key(
 async def delete_api_key(
     project_id: uuid.UUID,
     key_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_owner: User = Depends(require_owner),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Deletes an API key."""
-    await project_service.delete_api_key(session, key_id)
+    """Deletes an API key (Owner only)."""
+    await project_service.delete_api_key(session, key_id, current_owner.organization_id)
     return APIResponse(
         message="API key deleted successfully.",
         data={"deleted": True}

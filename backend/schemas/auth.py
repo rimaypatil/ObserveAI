@@ -31,6 +31,8 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     organization_id: Optional[uuid.UUID] = None
+    organization_name: Optional[str] = None
+    timezone: str = "UTC"
     created_at: datetime
 
 

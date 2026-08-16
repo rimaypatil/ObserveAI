@@ -21,7 +21,7 @@ async def upload_document(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Uploads runbooks, architecture docs, or playbooks. Automatically chunks, embeds, and indexes into ChromaDB."""
-    doc = await knowledge_service.ingest_document(session, project_id, data)
+    doc = await knowledge_service.ingest_document(session, project_id, current_user.organization_id, data)
     return APIResponse(
         message="Document uploaded, chunked, embedded, and indexed into ChromaDB vectorstore.",
         data=KnowledgeDocumentResponse.model_validate(doc)
@@ -36,7 +36,7 @@ async def list_documents(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Lists indexed knowledge documents for a project."""
-    docs = await knowledge_service.list_documents(session, project_id, doc_type=doc_type)
+    docs = await knowledge_service.list_documents(session, project_id, current_user.organization_id, doc_type=doc_type)
     return APIResponse(
         message="Indexed documents list retrieved.",
         data=[KnowledgeDocumentResponse.model_validate(d) for d in docs]
@@ -47,11 +47,14 @@ async def list_documents(
 async def search_rag_knowledge(
     project_id: uuid.UUID,
     data: RAGQuerySchema,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session)
 ):
     """Executes RAG hybrid similarity query over ChromaDB knowledge collections."""
-    result = knowledge_service.search_rag_knowledge(
+    result = await knowledge_service.search_rag_knowledge(
+        session=session,
         project_id=project_id,
+        organization_id=current_user.organization_id,
         query=data.query,
         service_name=data.service_name,
         severity=data.severity,

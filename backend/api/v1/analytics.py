@@ -19,7 +19,7 @@ async def get_overview_stats(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Retrieves high-level platform statistics, active incidents, service health, and AI RCA resolution rates."""
-    stats = await analytics_service.get_overview_stats(session, project_id)
+    stats = await analytics_service.get_overview_stats(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Analytics overview stats retrieved.",
         data=stats

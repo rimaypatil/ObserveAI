@@ -1,5 +1,5 @@
 from backend.models.users import User, Organization, OrganizationMember, Team, UserSession
-from backend.models.projects import Project, ApiKey, Service, Environment, Deployment, SDKVersion
+from backend.models.projects import Project, ApiKey, Service, Environment, Deployment, SDKVersion, ProjectMember
 from backend.models.telemetry import TelemetryLog, TelemetryMetric, TelemetryException, TelemetryTrace
 from backend.models.incidents import Incident, IncidentTimeline, RcaReport, IncidentComment
 from backend.models.knowledge import KnowledgeDocument
@@ -18,6 +18,7 @@ __all__ = [
     "Environment",
     "Deployment",
     "SDKVersion",
+    "ProjectMember",
     "TelemetryLog",
     "TelemetryMetric",
     "TelemetryException",

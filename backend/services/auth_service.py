@@ -1,7 +1,7 @@
 import uuid
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from backend.models.users import Organization, User
+from backend.models.users import Organization, OrganizationMember, User
 from backend.repositories.user_repository import OrganizationRepository, UserRepository
 from backend.schemas.auth import LoginRequest, TokenResponse, UserCreate
 from backend.utils.exceptions import AuthenticationError, ValidationException
@@ -11,7 +11,6 @@ from backend.utils.security import (
     hash_password,
     verify_password,
 )
-
 
 class AuthService:
     async def register_user(self, session: AsyncSession, data: UserCreate) -> User:
@@ -39,6 +38,16 @@ class AuthService:
             organization_id=organization.id
         )
         user = await user_repo.create(user)
+
+        org_member = OrganizationMember(
+            organization_id=organization.id,
+            user_id=user.id,
+            role="owner"
+        )
+        session.add(org_member)
+        await session.flush()
+
+        user.organization = organization
         return user
 
     async def authenticate_user(self, session: AsyncSession, data: LoginRequest) -> TokenResponse:

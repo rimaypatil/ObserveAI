@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class NotificationConfig(BaseModel):
@@ -15,7 +15,7 @@ class NotificationConfig(BaseModel):
     )
     channel_type: Mapped[str] = mapped_column(String(50), nullable=False)  # email, slack, discord, webhook
     target_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    settings_json: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    settings_json: Mapped[Dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     project: Mapped["Project"] = relationship("Project")
@@ -48,7 +48,7 @@ class AuditLog(BaseModel):
     )
     action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     resource: Mapped[str] = mapped_column(String(100), nullable=False)
-    details_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    details_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
 
 

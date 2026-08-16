@@ -10,6 +10,15 @@ class ProjectRepository(BaseRepository[Project]):
     def __init__(self, session):
         super().__init__(Project, session)
 
+    async def get_by_id_and_org(self, project_id: uuid.UUID, organization_id: uuid.UUID) -> Optional[Project]:
+        query = select(Project).where(
+            Project.id == project_id,
+            Project.organization_id == organization_id,
+            Project.is_deleted == False
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
     async def get_by_org_and_slug(self, organization_id: uuid.UUID, slug: str) -> Optional[Project]:
         query = select(Project).where(
             Project.organization_id == organization_id,
@@ -45,6 +54,20 @@ class ApiKeyRepository(BaseRepository[ApiKey]):
         query = select(ApiKey).where(ApiKey.project_id == project_id, ApiKey.is_deleted == False).order_by(ApiKey.created_at.desc())
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def get_key_by_id_and_org(self, key_id: uuid.UUID, organization_id: uuid.UUID) -> Optional[ApiKey]:
+        query = (
+            select(ApiKey)
+            .join(Project, ApiKey.project_id == Project.id)
+            .where(
+                ApiKey.id == key_id,
+                Project.organization_id == organization_id,
+                ApiKey.is_deleted == False,
+                Project.is_deleted == False
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
 
 
 class ServiceRepository(BaseRepository[Service]):

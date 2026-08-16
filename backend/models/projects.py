@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class Project(BaseModel):
@@ -21,7 +21,7 @@ class Project(BaseModel):
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    settings: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True, default=dict)
+    settings: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, default=dict)
 
     # Relationships
     organization: Mapped["Organization"] = relationship("Organization", back_populates="projects")
@@ -111,3 +111,22 @@ class SDKVersion(BaseModel):
     version: Mapped[str] = mapped_column(String(50), nullable=False)
     min_compatible_backend: Mapped[str] = mapped_column(String(50), nullable=False)
     is_deprecated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class ProjectMember(BaseModel):
+    __tablename__ = "project_members"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    project: Mapped["Project"] = relationship("Project")
+    user: Mapped["User"] = relationship("User")
+
+    __table_args__ = (
+        Index("idx_project_member_unique", "project_id", "user_id", unique=True),
+    )
+

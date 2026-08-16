@@ -47,6 +47,8 @@ class IncidentResponse(BaseModel):
     confidence_score: Optional[float] = None
     started_at: datetime
     resolved_at: Optional[datetime] = None
+    environment: Optional[str] = None
+    service_name: Optional[str] = None
 
 
 class IncidentCommentCreate(BaseModel):

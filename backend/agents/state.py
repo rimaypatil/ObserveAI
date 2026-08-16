@@ -8,6 +8,7 @@ class RCAAgentState(BaseModel):
 
     incident_id: str
     project_id: str
+    organization_id: Optional[str] = None
     service_id: str
     service_name: str = "unknown-service"
     title: str = "Operational Incident"
@@ -28,7 +29,17 @@ class RCAAgentState(BaseModel):
     # Confidence Metrics
     confidence_meta: Dict[str, Any] = Field(default_factory=dict)
 
-    # Execution Orchestration
+    # Execution Orchestration & Domain Analysis
+    execution_plan: Dict[str, Any] = Field(default_factory=dict)
+    log_analysis: Dict[str, Any] = Field(default_factory=dict)
+    trace_analysis: Dict[str, Any] = Field(default_factory=dict)
+    exception_analysis: Dict[str, Any] = Field(default_factory=dict)
+    metric_analysis: Dict[str, Any] = Field(default_factory=dict)
+    deployment_analysis: Dict[str, Any] = Field(default_factory=dict)
+    rag_analysis: Dict[str, Any] = Field(default_factory=dict)
+    confidence_analysis: Dict[str, Any] = Field(default_factory=dict)
+    agent_reasoning: List[Dict[str, Any]] = Field(default_factory=list)
+
     executed_agents: List[str] = Field(default_factory=list)
     next_agent: str = "planner"
 

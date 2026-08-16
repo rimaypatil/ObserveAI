@@ -10,6 +10,21 @@ from backend.services.auth_service import auth_service
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def build_user_response(user: User) -> UserResponse:
+    org_name = user.organization.name if getattr(user, "organization", None) else None
+    role_str = user.role.upper() if user.role else "MEMBER"
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=role_str,
+        organization_id=user.organization_id,
+        organization_name=org_name,
+        timezone=getattr(user, "timezone", "UTC") or "UTC",
+        created_at=user.created_at,
+    )
+
+
 @router.post("/register", response_model=APIResponse[UserResponse], status_code=status.HTTP_201_CREATED)
 async def register(
     data: UserCreate,
@@ -19,7 +34,7 @@ async def register(
     user = await auth_service.register_user(session, data)
     return APIResponse(
         message="User account registered successfully.",
-        data=UserResponse.model_validate(user)
+        data=build_user_response(user)
     )
 
 
@@ -43,7 +58,7 @@ async def get_me(
     """Returns currently authenticated user profile."""
     return APIResponse(
         message="User profile retrieved.",
-        data=UserResponse.model_validate(current_user)
+        data=build_user_response(current_user)
     )
 
 

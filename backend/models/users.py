@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class Organization(BaseModel):
@@ -41,7 +41,7 @@ class User(BaseModel):
     password_reset_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC", nullable=False)
-    notification_preferences: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True, default=dict)
+    notification_preferences: Mapped[Optional[dict]] = mapped_column(JSONType, nullable=True, default=dict)
 
     # Relationships
     organization: Mapped[Optional["Organization"]] = relationship("Organization", back_populates="users")

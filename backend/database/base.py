@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Any
-from sqlalchemy import Boolean, DateTime, Index
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime, Index, JSON
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+JSONType = JSON().with_variant(JSONB, "postgresql")
 
 
 class Base(DeclarativeBase):

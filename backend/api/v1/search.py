@@ -32,7 +32,7 @@ async def search(
         page=page,
         page_size=page_size
     )
-    results = await search_service.search_all(session, params)
+    results = await search_service.search_all(session, current_user.organization_id, params)
     return APIResponse(
         message="Search results retrieved.",
         data=results

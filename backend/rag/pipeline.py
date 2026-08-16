@@ -43,7 +43,8 @@ class RAGPipeline:
         exception_msg: Optional[str] = None,
         environment: Optional[str] = None,
         severity: Optional[str] = None,
-        top_k: int = settings.RAG_TOP_K
+        top_k: int = settings.RAG_TOP_K,
+        organization_id: Optional[uuid.UUID] = None
     ) -> Dict[str, Any]:
         """
         Executes complete RAG pipeline and returns compressed, reranked context with citations.
@@ -64,7 +65,8 @@ class RAGPipeline:
                     top_k=top_k,
                     service=service_name,
                     environment=environment,
-                    severity=severity
+                    severity=severity,
+                    organization_id=organization_id
                 )
                 for item in results:
                     item["category"] = cat

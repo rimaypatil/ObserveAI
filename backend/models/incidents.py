@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import DateTime, Float, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class Incident(BaseModel):
@@ -39,6 +39,14 @@ class Incident(BaseModel):
     rca_report: Mapped[Optional["RcaReport"]] = relationship("RcaReport", back_populates="incident", uselist=False, cascade="all, delete-orphan")
     comments: Mapped[List["IncidentComment"]] = relationship("IncidentComment", back_populates="incident", cascade="all, delete-orphan")
 
+    @property
+    def environment(self) -> Optional[str]:
+        return self.project.environment if self.project else None
+
+    @property
+    def service_name(self) -> Optional[str]:
+        return self.service.name if self.service else None
+
     __table_args__ = (
         Index("idx_incidents_project_status", "project_id", "status"),
         Index("idx_incidents_severity", "project_id", "severity"),
@@ -53,7 +61,7 @@ class IncidentTimeline(BaseModel):
     )
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)  # TRIGGERED, AGENT_DISPATCHED, RAG_RETRIEVED, RCA_GENERATED, RESOLVED
     message: Mapped[str] = mapped_column(Text, nullable=False)
-    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    metadata_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     incident: Mapped["Incident"] = relationship("Incident", back_populates="timeline_events")
 
@@ -69,14 +77,14 @@ class RcaReport(BaseModel):
     )
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     root_cause: Mapped[str] = mapped_column(Text, nullable=False)
-    timeline_json: Mapped[List[Dict[str, Any]]] = mapped_column(JSONB, nullable=False)
-    evidence_json: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    historical_matches_json: Mapped[List[Dict[str, Any]]] = mapped_column(JSONB, nullable=False)
-    fix_recommendations_json: Mapped[List[str]] = mapped_column(JSONB, nullable=False)
-    prevention_actions_json: Mapped[List[str]] = mapped_column(JSONB, nullable=False)
+    timeline_json: Mapped[List[Dict[str, Any]]] = mapped_column(JSONType, nullable=False)
+    evidence_json: Mapped[Dict[str, Any]] = mapped_column(JSONType, nullable=False)
+    historical_matches_json: Mapped[List[Dict[str, Any]]] = mapped_column(JSONType, nullable=False)
+    fix_recommendations_json: Mapped[List[str]] = mapped_column(JSONType, nullable=False)
+    prevention_actions_json: Mapped[List[str]] = mapped_column(JSONType, nullable=False)
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False)
     confidence_level: Mapped[str] = mapped_column(String(20), default="HIGH", nullable=False)  # HIGH, MEDIUM, LOW
-    reasoning_tree_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    reasoning_tree_json: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     incident: Mapped["Incident"] = relationship("Incident", back_populates="rca_report")
 

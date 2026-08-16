@@ -12,12 +12,16 @@ class IncidentService:
         self,
         session: AsyncSession,
         project_id: uuid.UUID,
+        organization_id: uuid.UUID,
         status: Optional[str] = None,
         severity: Optional[str] = None,
         service_id: Optional[uuid.UUID] = None,
         limit: int = 50,
         offset: int = 0
     ) -> List[Incident]:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
+
         repo = IncidentRepository(session)
         return list(await repo.list_by_project(
             project_id=project_id,
@@ -31,25 +35,22 @@ class IncidentService:
     async def get_incident_details(
         self,
         session: AsyncSession,
-        incident_id: uuid.UUID
+        incident_id: uuid.UUID,
+        organization_id: uuid.UUID
     ) -> Incident:
-        repo = IncidentRepository(session)
-        incident = await repo.get_with_details(incident_id)
-        if not incident:
-            raise NotFoundError("Incident", incident_id)
-        return incident
+        from backend.api.dependencies import verify_incident_ownership
+        return await verify_incident_ownership(session, incident_id, organization_id)
 
     async def update_incident_status(
         self,
         session: AsyncSession,
         incident_id: uuid.UUID,
+        organization_id: uuid.UUID,
         new_status: str,
         summary: Optional[str] = None
     ) -> Incident:
-        repo = IncidentRepository(session)
-        incident = await repo.get_with_details(incident_id)
-        if not incident:
-            raise NotFoundError("Incident", incident_id)
+        from backend.api.dependencies import verify_incident_ownership
+        incident = await verify_incident_ownership(session, incident_id, organization_id)
 
         incident.status = new_status
         if summary:
@@ -71,12 +72,11 @@ class IncidentService:
         self,
         session: AsyncSession,
         incident_id: uuid.UUID,
+        organization_id: uuid.UUID,
         assigned_to_id: uuid.UUID
     ) -> Incident:
-        repo = IncidentRepository(session)
-        incident = await repo.get_with_details(incident_id)
-        if not incident:
-            raise NotFoundError("Incident", incident_id)
+        from backend.api.dependencies import verify_incident_ownership
+        incident = await verify_incident_ownership(session, incident_id, organization_id)
 
         incident.assigned_to_id = assigned_to_id
         timeline_event = IncidentTimeline(
@@ -93,14 +93,13 @@ class IncidentService:
         self,
         session: AsyncSession,
         incident_id: uuid.UUID,
+        organization_id: uuid.UUID,
         user_id: uuid.UUID,
         comment_text: str
     ) -> Any:
         from backend.models.incidents import IncidentComment
-        repo = IncidentRepository(session)
-        incident = await repo.get_by_id(incident_id)
-        if not incident:
-            raise NotFoundError("Incident", incident_id)
+        from backend.api.dependencies import verify_incident_ownership
+        await verify_incident_ownership(session, incident_id, organization_id)
 
         comment = IncidentComment(
             incident_id=incident_id,

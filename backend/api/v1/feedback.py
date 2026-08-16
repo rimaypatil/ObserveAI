@@ -20,7 +20,7 @@ async def create_rca_feedback(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Submits user feedback and accuracy rating for an AI-generated RCA report."""
-    feedback = await feedback_service.create_feedback(session, incident_id, current_user.id, data)
+    feedback = await feedback_service.create_feedback(session, incident_id, current_user.organization_id, current_user.id, data)
     return APIResponse(
         message="RCA feedback submitted successfully.",
         data=RCAFeedbackResponse.model_validate(feedback)
@@ -34,7 +34,7 @@ async def get_rca_feedback(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Retrieves feedback ratings submitted for an incident's RCA report."""
-    feedbacks = await feedback_service.get_incident_feedback(session, incident_id)
+    feedbacks = await feedback_service.get_incident_feedback(session, incident_id, current_user.organization_id)
     return APIResponse(
         message="RCA feedback retrieved.",
         data=[RCAFeedbackResponse.model_validate(f) for f in feedbacks]

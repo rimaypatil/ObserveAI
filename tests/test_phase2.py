@@ -50,3 +50,18 @@ def test_feedback_schema():
     assert fb.is_helpful is True
     assert fb.rating == 5
     assert fb.comment == "Spot on analysis!"
+
+
+def test_organization_schemas():
+    from backend.schemas.organization import InviteMemberRequest, TransferOwnershipRequest, UpdateMemberRoleRequest
+    invite = InviteMemberRequest(email="newuser@example.com", full_name="New User", password="Password123!", role="MEMBER")
+    assert invite.email == "newuser@example.com"
+    assert invite.role == "MEMBER"
+
+    target_id = uuid.uuid4()
+    transfer = TransferOwnershipRequest(new_owner_id=target_id)
+    assert transfer.new_owner_id == target_id
+
+    role_upd = UpdateMemberRoleRequest(role="OWNER")
+    assert role_upd.role == "OWNER"
+

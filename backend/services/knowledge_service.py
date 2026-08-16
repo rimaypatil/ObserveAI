@@ -19,8 +19,12 @@ class KnowledgeService:
         self,
         session: AsyncSession,
         project_id: uuid.UUID,
+        organization_id: uuid.UUID,
         data: KnowledgeDocumentCreate
     ) -> KnowledgeDocument:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
+
         file_hash = document_chunker.compute_hash(data.content)
         repo = KnowledgeRepository(session)
 
@@ -37,6 +41,7 @@ class KnowledgeService:
         # Chunk content
         metadata_base = {
             "project_id": str(project_id),
+            "organization_id": str(organization_id),
             "title": data.title,
             "doc_type": data.doc_type
         }
@@ -88,25 +93,33 @@ class KnowledgeService:
         self,
         session: AsyncSession,
         project_id: uuid.UUID,
+        organization_id: uuid.UUID,
         doc_type: Optional[str] = None
     ) -> List[KnowledgeDocument]:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
         repo = KnowledgeRepository(session)
         return list(await repo.list_by_project(project_id, doc_type=doc_type))
 
-    def search_rag_knowledge(
+    async def search_rag_knowledge(
         self,
+        session: AsyncSession,
         project_id: uuid.UUID,
+        organization_id: uuid.UUID,
         query: str,
         service_name: Optional[str] = None,
         severity: Optional[str] = None,
         top_k: int = 5
     ) -> Dict[str, Any]:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
         return rag_pipeline.execute_rag(
             project_id=project_id,
             incident_title=query,
             service_name=service_name or "general",
             severity=severity,
-            top_k=top_k
+            top_k=top_k,
+            organization_id=organization_id
         )
 
 

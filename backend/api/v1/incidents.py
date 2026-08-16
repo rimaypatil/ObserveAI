@@ -35,6 +35,7 @@ async def list_incidents(
     incidents = await incident_service.list_incidents(
         session=session,
         project_id=project_id,
+        organization_id=current_user.organization_id,
         status=status,
         severity=severity,
         service_id=service_id,
@@ -54,7 +55,7 @@ async def get_incident_details(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Retrieves full incident details, timeline event history, and AI Root Cause Analysis (RCA) report."""
-    incident = await incident_service.get_incident_details(session, incident_id)
+    incident = await incident_service.get_incident_details(session, incident_id, current_user.organization_id)
     return APIResponse(
         message="Incident details and AI RCA report retrieved.",
         data=IncidentDetailResponse.model_validate(incident)
@@ -72,6 +73,7 @@ async def update_incident_status(
     updated = await incident_service.update_incident_status(
         session=session,
         incident_id=incident_id,
+        organization_id=current_user.organization_id,
         new_status=data.status,
         summary=data.root_cause_summary
     )
@@ -89,7 +91,7 @@ async def assign_incident(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Assigns an incident to a user."""
-    updated = await incident_service.assign_incident(session, incident_id, data.assigned_to_id)
+    updated = await incident_service.assign_incident(session, incident_id, current_user.organization_id, data.assigned_to_id)
     return APIResponse(
         message="Incident assigned successfully.",
         data=IncidentResponse.model_validate(updated)
@@ -104,7 +106,7 @@ async def add_incident_comment(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Adds a comment to an incident timeline."""
-    comment = await incident_service.add_comment(session, incident_id, current_user.id, data.comment)
+    comment = await incident_service.add_comment(session, incident_id, current_user.organization_id, current_user.id, data.comment)
     return APIResponse(
         message="Comment added successfully.",
         data=IncidentCommentResponse.model_validate(comment)

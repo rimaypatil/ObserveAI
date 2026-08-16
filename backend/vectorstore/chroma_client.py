@@ -80,7 +80,8 @@ class ChromaVectorStore:
         top_k: int = 5,
         service: Optional[str] = None,
         environment: Optional[str] = None,
-        severity: Optional[str] = None
+        severity: Optional[str] = None,
+        organization_id: Optional[uuid.UUID] = None
     ) -> List[Dict[str, Any]]:
         """Executes vector similarity search with strict metadata filtering."""
         try:
@@ -89,7 +90,9 @@ class ChromaVectorStore:
             # Construct metadata filter
             where_clause: Dict[str, Any] = {"project_id": str(project_id)}
             conditions = [{"project_id": str(project_id)}]
-            
+
+            if organization_id:
+                conditions.append({"organization_id": str(organization_id)})
             if service:
                 conditions.append({"service": service})
             if environment:

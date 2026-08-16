@@ -3,6 +3,7 @@ from typing import Optional, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from backend.models.incidents import Incident, IncidentTimeline, RcaReport
+from backend.models.projects import Project
 from backend.repositories.base import BaseRepository
 
 
@@ -17,9 +18,31 @@ class IncidentRepository(BaseRepository[Incident]):
                 selectinload(Incident.timeline_events),
                 selectinload(Incident.rca_report),
                 selectinload(Incident.service),
-                selectinload(Incident.project)
+                selectinload(Incident.project),
+                selectinload(Incident.comments)
             )
             .where(Incident.id == incident_id, Incident.is_deleted == False)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_with_details_and_org(self, incident_id: uuid.UUID, organization_id: uuid.UUID) -> Optional[Incident]:
+        query = (
+            select(Incident)
+            .join(Project, Incident.project_id == Project.id)
+            .options(
+                selectinload(Incident.timeline_events),
+                selectinload(Incident.rca_report),
+                selectinload(Incident.service),
+                selectinload(Incident.project),
+                selectinload(Incident.comments)
+            )
+            .where(
+                Incident.id == incident_id,
+                Project.organization_id == organization_id,
+                Incident.is_deleted == False,
+                Project.is_deleted == False
+            )
         )
         result = await self.session.execute(query)
         return result.scalars().first()
@@ -35,7 +58,7 @@ class IncidentRepository(BaseRepository[Incident]):
     ) -> Sequence[Incident]:
         query = (
             select(Incident)
-            .options(selectinload(Incident.service))
+            .options(selectinload(Incident.service), selectinload(Incident.project))
             .where(Incident.project_id == project_id, Incident.is_deleted == False)
         )
         if status:

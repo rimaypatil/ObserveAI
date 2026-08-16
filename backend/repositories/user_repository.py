@@ -24,6 +24,17 @@ class UserRepository(BaseRepository[User]):
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def find_by_organization(self, organization_id: uuid.UUID) -> Sequence[User]:
+        query = select(User).where(User.organization_id == organization_id, User.is_deleted == False)
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
+    async def count_by_organization(self, organization_id: uuid.UUID) -> int:
+        from sqlalchemy import func
+        query = select(func.count(User.id)).where(User.organization_id == organization_id, User.is_deleted == False)
+        result = await self.session.execute(query)
+        return result.scalar() or 0
+
     async def get_by_reset_token(self, token_hash: str) -> Optional[User]:
         query = select(User).where(User.password_reset_token == token_hash, User.is_deleted == False)
         result = await self.session.execute(query)

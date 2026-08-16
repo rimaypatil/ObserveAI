@@ -29,6 +29,7 @@ async def query_logs(
     logs = await telemetry_service.query_logs(
         session=session,
         project_id=project_id,
+        organization_id=current_user.organization_id,
         service_id=service_id,
         level=level,
         trace_id=trace_id,
@@ -50,7 +51,7 @@ async def get_trace_waterfall(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Retrieves end-to-end OpenTelemetry distributed trace spans for waterfall visualization."""
-    spans = await telemetry_service.get_trace_waterfall(session, project_id, trace_id)
+    spans = await telemetry_service.get_trace_waterfall(session, project_id, current_user.organization_id, trace_id)
     return APIResponse(
         message="Trace spans retrieved.",
         data=[s.to_dict() for s in spans]
@@ -66,7 +67,7 @@ async def query_exceptions(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Queries uncaught exceptions and stack traces."""
-    exceptions = await telemetry_service.query_exceptions(session, project_id, service_id, limit=limit)
+    exceptions = await telemetry_service.query_exceptions(session, project_id, current_user.organization_id, service_id, limit=limit)
     return APIResponse(
         message="Exceptions retrieved.",
         data=[e.to_dict() for e in exceptions]
@@ -80,14 +81,10 @@ async def get_telemetry_summary(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Returns telemetry volume and health summary for a project."""
+    summary = await telemetry_service.get_telemetry_summary(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Telemetry summary retrieved.",
-        data={
-            "logs_count": 1250,
-            "metrics_count": 4800,
-            "traces_count": 320,
-            "error_rate_percentage": 0.42
-        }
+        data=summary
     )
 
 
@@ -98,12 +95,10 @@ async def get_top_errors(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Returns top occurring error messages."""
+    top_errors = await telemetry_service.get_top_errors(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Top errors retrieved.",
-        data=[
-            {"error_message": "Database connection timeout", "count": 42, "service": "user-service"},
-            {"error_message": "Redis connection refused", "count": 18, "service": "cache-service"}
-        ]
+        data=top_errors
     )
 
 
@@ -114,12 +109,10 @@ async def get_top_services(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Returns top active services by telemetry volume."""
+    top_services = await telemetry_service.get_top_services(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Top services retrieved.",
-        data=[
-            {"service_name": "api-gateway", "log_volume": 4500, "status": "healthy"},
-            {"service_name": "auth-service", "log_volume": 2100, "status": "healthy"}
-        ]
+        data=top_services
     )
 
 
@@ -130,11 +123,8 @@ async def get_latency_stats(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Returns latency percentiles (p50, p95, p99)."""
+    latency_stats = await telemetry_service.get_latency_stats(session, project_id, current_user.organization_id)
     return APIResponse(
         message="Latency stats retrieved.",
-        data={
-            "p50_ms": 42.5,
-            "p95_ms": 180.2,
-            "p99_ms": 450.0
-        }
+        data=latency_stats
     )

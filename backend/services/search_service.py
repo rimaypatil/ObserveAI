@@ -10,17 +10,40 @@ from backend.schemas.search import SearchQuery, SearchResponse, SearchResultItem
 
 
 class SearchService:
-    async def search_all(self, session: AsyncSession, params: SearchQuery) -> SearchResponse:
+    async def search_all(self, session: AsyncSession, organization_id: uuid.UUID, params: SearchQuery) -> SearchResponse:
         results: List[SearchResultItem] = []
         term = f"%{params.query}%" if params.query else "%"
+
+        # Get all projects belonging to caller's organization
+        proj_stmt = select(Project.id).where(Project.organization_id == organization_id, Project.is_deleted == False)
+        org_project_ids = list((await session.execute(proj_stmt)).scalars().all())
+
+        if not org_project_ids:
+            return SearchResponse(
+                items=[],
+                total=0,
+                page=params.page,
+                page_size=params.page_size
+            )
+
+        if params.project_id:
+            if params.project_id not in org_project_ids:
+                return SearchResponse(
+                    items=[],
+                    total=0,
+                    page=params.page,
+                    page_size=params.page_size
+                )
+            target_project_ids = [params.project_id]
+        else:
+            target_project_ids = org_project_ids
 
         # Search Incidents
         inc_stmt = select(Incident).where(
             Incident.is_deleted == False,
+            Incident.project_id.in_(target_project_ids),
             or_(Incident.title.ilike(term), Incident.description.ilike(term))
         )
-        if params.project_id:
-            inc_stmt = inc_stmt.where(Incident.project_id == params.project_id)
         if params.severity:
             inc_stmt = inc_stmt.where(Incident.severity == params.severity)
         if params.status:
@@ -40,10 +63,9 @@ class SearchService:
         # Search Knowledge Documents
         k_stmt = select(KnowledgeDocument).where(
             KnowledgeDocument.is_deleted == False,
+            KnowledgeDocument.project_id.in_(target_project_ids),
             KnowledgeDocument.title.ilike(term)
         )
-        if params.project_id:
-            k_stmt = k_stmt.where(KnowledgeDocument.project_id == params.project_id)
 
         docs = (await session.execute(k_stmt.limit(params.page_size))).scalars().all()
         for doc in docs:

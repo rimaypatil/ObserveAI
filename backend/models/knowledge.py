@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class KnowledgeDocument(BaseModel):
@@ -16,7 +16,7 @@ class KnowledgeDocument(BaseModel):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     doc_type: Mapped[str] = mapped_column(String(50), nullable=False)  # runbook, architecture, postmortem, playbooks, docs, commit_summary
     category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
-    tags: Mapped[Optional[List[str]]] = mapped_column(JSONB, nullable=True, default=list)
+    tags: Mapped[Optional[List[str]]] = mapped_column(JSONType, nullable=True, default=list)
     file_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     file_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

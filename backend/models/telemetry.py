@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from backend.database.base import BaseModel
+from backend.database.base import BaseModel, JSONType
 
 
 class TelemetryLog(BaseModel):
@@ -22,7 +22,7 @@ class TelemetryLog(BaseModel):
     logger_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     trace_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
     span_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
-    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     __table_args__ = (
         Index("idx_logs_project_ts", "project_id", "timestamp"),
@@ -44,7 +44,7 @@ class TelemetryMetric(BaseModel):
     metric_type: Mapped[str] = mapped_column(String(50), nullable=False)  # gauge, counter, histogram
     value: Mapped[float] = mapped_column(Float, nullable=False)
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    tags: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     __table_args__ = (
         Index("idx_metrics_project_name_ts", "project_id", "name", "timestamp"),
@@ -91,7 +91,7 @@ class TelemetryTrace(BaseModel):
     operation_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     duration_ms: Mapped[float] = mapped_column(Float, nullable=False)
     status_code: Mapped[int] = mapped_column(Integer, default=200, nullable=False)
-    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     __table_args__ = (
         Index("idx_traces_project_trace_id", "project_id", "trace_id"),

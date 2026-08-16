@@ -136,9 +136,15 @@ class IncidentDetector:
             incident.status = "AI_PROCESSING"
             await session.flush()
 
+            from backend.repositories.project_repository import ProjectRepository
+            project_repo = ProjectRepository(session)
+            project = await project_repo.get_by_id(incident.project_id)
+            org_id_str = str(project.organization_id) if project else None
+
             initial_state = RCAAgentState(
                 incident_id=str(incident.id),
                 project_id=str(incident.project_id),
+                organization_id=org_id_str,
                 service_id=str(incident.service_id),
                 service_name=service_name,
                 title=incident.title,
@@ -171,7 +177,18 @@ class IncidentDetector:
                     prevention_actions_json=rca_dict.get("prevention_actions", []),
                     confidence_score=float(rca_dict.get("confidence_score", 0.85)),
                     confidence_level=final_state.confidence_meta.get("confidence_level", "HIGH"),
-                    reasoning_tree_json={"executed_agents": final_state.executed_agents}
+                    reasoning_tree_json={
+                        "executed_agents": final_state.executed_agents,
+                        "planner_decisions": final_state.execution_plan,
+                        "agent_reasoning": final_state.agent_reasoning,
+                        "confidence_reasoning": final_state.confidence_analysis,
+                        "historical_matches": final_state.rag_analysis.get("historical_matches", []),
+                        "latency_analysis": final_state.trace_analysis,
+                        "deployment_correlation": final_state.deployment_analysis,
+                        "log_analysis": final_state.log_analysis,
+                        "exception_analysis": final_state.exception_analysis,
+                        "metric_analysis": final_state.metric_analysis
+                    }
                 )
                 await rca_repo.create(report_model)
 
