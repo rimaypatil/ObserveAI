@@ -130,7 +130,7 @@ export const AIAgentsSection = () => {
                 <button
                   key={agent.id}
                   onClick={() => setSelectedAgent(idx)}
-                  className={`p-3.5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between h-[120px] ${
+                  className={`p-3.5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between min-h-[125px] gap-2 ${
                     isSelected
                       ? 'bg-[#172033] border-blue-500 ring-1 ring-blue-500/50 shadow-xl scale-[1.02]'
                       : 'bg-[#172033]/50 border-[#263247] hover:border-slate-700 hover:bg-[#172033]/80'
@@ -146,10 +146,10 @@ export const AIAgentsSection = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-xs font-bold text-slate-100 truncate mb-1">
+                    <h3 className="text-xs font-bold text-slate-100 mb-1">
                       {agent.name}
                     </h3>
-                    <p className="text-[10px] text-slate-400 line-clamp-1">
+                    <p className="text-[10px] text-slate-400 leading-snug line-clamp-2">
                       {agent.purpose}
                     </p>
                   </div>

@@ -51,7 +51,7 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Left: Brand Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
               <Activity className="w-5 h-5 text-white animate-pulse" />
             </div>
