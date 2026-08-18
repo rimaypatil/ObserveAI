@@ -15,6 +15,7 @@ import {
 
 export const HeroSection = () => {
   const [activeStep, setActiveStep] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Animated pipeline steps demonstrating autonomous root cause analysis
   const pipelineSteps = [
@@ -84,11 +85,12 @@ export const HeroSection = () => {
   ];
 
   useEffect(() => {
+    if (isPaused) return;
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % pipelineSteps.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused, pipelineSteps.length]);
 
   const scrollToHowItWorks = (e) => {
     e.preventDefault();
@@ -146,7 +148,11 @@ export const HeroSection = () => {
         </div>
 
         {/* Hero Visual Mockup: Real-Time Incident Pipeline */}
-        <div className="mt-14 max-w-5xl mx-auto rounded-2xl bg-[#172033] border border-[#263247] shadow-2xl p-4 sm:p-6 lg:p-8 backdrop-blur-xl relative">
+        <div
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          className="mt-14 max-w-5xl mx-auto rounded-2xl bg-[#172033] border border-[#263247] shadow-2xl p-4 sm:p-6 lg:p-8 backdrop-blur-xl relative"
+        >
           {/* Header Bar */}
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#263247]">
             <div className="flex items-center gap-3">
@@ -161,10 +167,12 @@ export const HeroSection = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isPaused ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
               </span>
-              <span className="text-xs font-semibold text-emerald-400">Live Agent Pipeline</span>
+              <span className={`text-xs font-semibold ${isPaused ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {isPaused ? 'Pipeline Paused (Manual Inspection)' : 'Live Agent Pipeline'}
+              </span>
             </div>
           </div>
 
@@ -178,7 +186,10 @@ export const HeroSection = () => {
               return (
                 <div
                   key={idx}
-                  onClick={() => setActiveStep(idx)}
+                  onClick={() => {
+                    setActiveStep(idx);
+                    setIsPaused(true);
+                  }}
                   className={`p-3.5 rounded-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[140px] ${
                     isActive
                       ? `${step.bg} ${step.border} ring-1 ring-blue-400/50 shadow-lg scale-[1.02]`
@@ -237,7 +248,7 @@ export const HeroSection = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs text-slate-400 font-mono self-end md:self-auto">
-              <span>Auto-cycling simulation...</span>
+              <span>{isPaused ? 'Paused (hover off to resume)' : 'Auto-cycling simulation...'}</span>
             </div>
           </div>
         </div>
