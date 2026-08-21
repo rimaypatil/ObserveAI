@@ -128,3 +128,39 @@ async def get_latency_stats(
         message="Latency stats retrieved.",
         data=latency_stats
     )
+
+
+@router.get("/timeseries/latency", response_model=APIResponse[List[dict]])
+async def get_latency_timeseries(
+    project_id: uuid.UUID = Query(...),
+    hours: int = Query(1, ge=1, le=168),
+    bucket_minutes: int = Query(5, ge=1, le=60),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Retrieves time-series latency percentiles (P50, P95, P99)."""
+    data = await telemetry_service.get_latency_timeseries(
+        session, project_id, current_user.organization_id, hours=hours, bucket_minutes=bucket_minutes
+    )
+    return APIResponse(
+        message="Latency timeseries retrieved.",
+        data=data
+    )
+
+
+@router.get("/timeseries/throughput", response_model=APIResponse[List[dict]])
+async def get_throughput_timeseries(
+    project_id: uuid.UUID = Query(...),
+    hours: int = Query(1, ge=1, le=168),
+    bucket_minutes: int = Query(5, ge=1, le=60),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Retrieves time-series request volume vs error volume."""
+    data = await telemetry_service.get_throughput_timeseries(
+        session, project_id, current_user.organization_id, hours=hours, bucket_minutes=bucket_minutes
+    )
+    return APIResponse(
+        message="Throughput timeseries retrieved.",
+        data=data
+    )

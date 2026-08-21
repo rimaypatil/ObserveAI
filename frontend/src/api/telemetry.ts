@@ -63,4 +63,24 @@ export const telemetryApi = {
     });
     return unwrapData(res);
   },
+
+  async getLatencyTimeseries(
+    projectId: string,
+    hours: number = 1
+  ): Promise<Array<{ timestamp: string; p50_ms: number; p95_ms: number; p99_ms: number }>> {
+    const res = await apiClient.get<APIResponse<any>>('/telemetry/timeseries/latency', {
+      params: { project_id: projectId, hours },
+    });
+    return unwrapData(res);
+  },
+
+  async getThroughputTimeseries(
+    projectId: string,
+    hours: number = 1
+  ): Promise<Array<{ timestamp: string; request_count: number; error_count: number }>> {
+    const res = await apiClient.get<APIResponse<any>>('/telemetry/timeseries/throughput', {
+      params: { project_id: projectId, hours },
+    });
+    return unwrapData(res);
+  },
 };

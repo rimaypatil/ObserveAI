@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.telemetry import TelemetryException, TelemetryLog, TelemetryMetric, TelemetryTrace
@@ -184,6 +184,50 @@ class TelemetryService:
         p95 = round(float(durations[min(int(n * 0.95), n - 1)]), 2)
         p99 = round(float(durations[min(int(n * 0.99), n - 1)]), 2)
         return {"p50_ms": p50, "p95_ms": p95, "p99_ms": p99}
+
+    async def get_latency_timeseries(
+        self,
+        session: AsyncSession,
+        project_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        hours: int = 1,
+        bucket_minutes: int = 5
+    ) -> List[dict]:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
+
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(hours=hours)
+
+        trace_repo = TelemetryTraceRepository(session)
+        return list(await trace_repo.get_latency_timeseries(
+            project_id=project_id,
+            start_time=start_time,
+            end_time=end_time,
+            bucket_minutes=bucket_minutes
+        ))
+
+    async def get_throughput_timeseries(
+        self,
+        session: AsyncSession,
+        project_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        hours: int = 1,
+        bucket_minutes: int = 5
+    ) -> List[dict]:
+        from backend.api.dependencies import verify_project_ownership
+        await verify_project_ownership(session, project_id, organization_id)
+
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(hours=hours)
+
+        trace_repo = TelemetryTraceRepository(session)
+        return list(await trace_repo.get_throughput_timeseries(
+            project_id=project_id,
+            start_time=start_time,
+            end_time=end_time,
+            bucket_minutes=bucket_minutes
+        ))
 
 
 telemetry_service = TelemetryService()

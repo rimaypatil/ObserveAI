@@ -87,6 +87,47 @@ class IncidentRepository(BaseRepository[Incident]):
         result = await self.session.execute(query)
         return result.scalars().first()
 
+    async def get_active_incident_by_fingerprint(
+        self,
+        project_id: uuid.UUID,
+        service_id: uuid.UUID,
+        fingerprint: str
+    ) -> Optional[Incident]:
+        query = (
+            select(Incident)
+            .options(selectinload(Incident.timeline_events))
+            .where(
+                Incident.project_id == project_id,
+                Incident.service_id == service_id,
+                Incident.fingerprint == fingerprint,
+                Incident.status.in_(["CREATED", "INVESTIGATING", "AI_PROCESSING"]),
+                Incident.is_deleted == False
+            )
+            .order_by(Incident.started_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def get_active_incidents_for_service(
+        self,
+        project_id: uuid.UUID,
+        service_id: uuid.UUID
+    ) -> Sequence[Incident]:
+        query = (
+            select(Incident)
+            .options(selectinload(Incident.timeline_events))
+            .where(
+                Incident.project_id == project_id,
+                Incident.service_id == service_id,
+                Incident.status.in_(["CREATED", "INVESTIGATING", "AI_PROCESSING"]),
+                Incident.is_deleted == False
+            )
+            .order_by(Incident.started_at.desc())
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
 
 class RcaReportRepository(BaseRepository[RcaReport]):
     def __init__(self, session):

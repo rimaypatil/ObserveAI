@@ -162,6 +162,8 @@ class IngestionService:
             deployments=raw_deployments
         )
 
+        await session.commit()
+
         return {
             "status": "success",
             "processed": {

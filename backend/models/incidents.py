@@ -29,6 +29,7 @@ class Incident(BaseModel):
     owner_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    fingerprint: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now, nullable=False, index=True)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

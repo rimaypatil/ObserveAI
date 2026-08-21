@@ -1,3 +1,4 @@
+import math
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Sequence
@@ -123,6 +124,127 @@ class TelemetryTraceRepository(BaseRepository[TelemetryTrace]):
         query = query.order_by(TelemetryTrace.duration_ms.desc()).limit(limit)
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def get_latency_timeseries(
+        self,
+        project_id: uuid.UUID,
+        start_time: datetime,
+        end_time: datetime,
+        bucket_minutes: int = 5
+    ) -> Sequence[dict]:
+        query = select(
+            TelemetryTrace.timestamp,
+            TelemetryTrace.duration_ms
+        ).where(
+            TelemetryTrace.project_id == project_id,
+            TelemetryTrace.timestamp >= start_time,
+            TelemetryTrace.timestamp <= end_time,
+            TelemetryTrace.is_deleted == False
+        ).order_by(TelemetryTrace.timestamp.asc())
+
+        result = await self.session.execute(query)
+        rows = result.all()
+        if not rows:
+            return []
+
+        bucket_seconds = bucket_minutes * 60
+        buckets = {}
+        for ts, duration in rows:
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            epoch = ts.timestamp()
+            bucket_epoch = math.floor(epoch / bucket_seconds) * bucket_seconds
+            bucket_dt = datetime.fromtimestamp(bucket_epoch, tz=timezone.utc)
+            if bucket_dt not in buckets:
+                buckets[bucket_dt] = []
+            buckets[bucket_dt].append(duration)
+
+        res = []
+        for bucket_dt in sorted(buckets.keys()):
+            durations = sorted(buckets[bucket_dt])
+            n = len(durations)
+            p50_idx = min(int(round((n - 1) * 0.50)), n - 1)
+            p95_idx = min(int(round((n - 1) * 0.95)), n - 1)
+            p99_idx = min(int(round((n - 1) * 0.99)), n - 1)
+            p50 = round(float(durations[p50_idx]), 2)
+            p95 = round(float(durations[p95_idx]), 2)
+            p99 = round(float(durations[p99_idx]), 2)
+            res.append({
+                "timestamp": bucket_dt.isoformat(),
+                "p50_ms": p50,
+                "p95_ms": p95,
+                "p99_ms": p99
+            })
+        return res
+
+    async def get_throughput_timeseries(
+        self,
+        project_id: uuid.UUID,
+        start_time: datetime,
+        end_time: datetime,
+        bucket_minutes: int = 5
+    ) -> Sequence[dict]:
+        trace_query = select(
+            TelemetryTrace.timestamp,
+            TelemetryTrace.status_code
+        ).where(
+            TelemetryTrace.project_id == project_id,
+            TelemetryTrace.timestamp >= start_time,
+            TelemetryTrace.timestamp <= end_time,
+            TelemetryTrace.is_deleted == False
+        )
+
+        log_query = select(
+            TelemetryLog.timestamp,
+            TelemetryLog.level
+        ).where(
+            TelemetryLog.project_id == project_id,
+            TelemetryLog.timestamp >= start_time,
+            TelemetryLog.timestamp <= end_time,
+            TelemetryLog.is_deleted == False
+        )
+
+        trace_rows = (await self.session.execute(trace_query)).all()
+        log_rows = (await self.session.execute(log_query)).all()
+
+        if not trace_rows and not log_rows:
+            return []
+
+        bucket_seconds = bucket_minutes * 60
+        buckets = {}
+
+        def get_bucket_dt(ts):
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            epoch = ts.timestamp()
+            bucket_epoch = math.floor(epoch / bucket_seconds) * bucket_seconds
+            return datetime.fromtimestamp(bucket_epoch, tz=timezone.utc)
+
+        for ts, status_code in trace_rows:
+            b_dt = get_bucket_dt(ts)
+            if b_dt not in buckets:
+                buckets[b_dt] = {"req": 0, "err": 0}
+            buckets[b_dt]["req"] += 1
+            if status_code and status_code >= 400:
+                buckets[b_dt]["err"] += 1
+
+        for ts, level in log_rows:
+            b_dt = get_bucket_dt(ts)
+            if b_dt not in buckets:
+                buckets[b_dt] = {"req": 0, "err": 0}
+            if level in ["ERROR", "CRITICAL"]:
+                buckets[b_dt]["err"] += 1
+            if not trace_rows:
+                buckets[b_dt]["req"] += 1
+
+        res = []
+        for b_dt in sorted(buckets.keys()):
+            res.append({
+                "timestamp": b_dt.isoformat(),
+                "request_count": buckets[b_dt]["req"],
+                "error_count": buckets[b_dt]["err"]
+            })
+        return res
 
 
 class TelemetryMetricRepository(BaseRepository[TelemetryMetric]):
