@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.incidents import Incident, IncidentTimeline
 from backend.repositories.incident_repository import IncidentRepository
